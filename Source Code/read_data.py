@@ -266,3 +266,20 @@ def split_df(dataframe, folder):
         os.mkdir(path + r"\\" + folder + f"{code}")
         output_df.to_csv(folder + f"{code}\\" + f"{code}.csv", index=False)
     pass
+
+
+def split_csv_with_choice(bdn_events, column):
+    """# split csv into 2 diff sets, one coded and one blank based on column given"""
+    problem_code_index = colummn_index(column, bdn_events)
+    raw_data = read_data(bdn_events)
+    top_row = read_header(bdn_events)
+    blank_code = pd.DataFrame()
+    coded_code = pd.DataFrame()
+    for row in raw_data:
+        if row[problem_code_index] == "":
+            blank_code = blank_code.append(pd.DataFrame([row]), ignore_index=True)
+        elif row[problem_code_index] != "":
+            coded_code = coded_code.append(pd.DataFrame([row]), ignore_index=True)
+    blank_code.columns = top_row
+    coded_code.columns = top_row
+    return blank_code, coded_code

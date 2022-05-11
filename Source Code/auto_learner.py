@@ -3,14 +3,15 @@ from random import random
 from nltk import WordNetLemmatizer
 from copy import deepcopy
 
-"""# take in all the raw data and split into coded and uncoded data"""
 # data directory
 data_folder = r"Current Data\\"
 
 
 # from the longdesc in the training data, make a dict of all the words that will appear for each problemcode and put that in a dictionary except OT
 # import these modules
-def make_training_dict(training_data):  # makes the training dictionary
+def make_training_dict(
+    training_data, column_to_code="problemcode", info_for_coding="longdesc"
+):  # makes the training dictionary
     training_dict = {}
     lemmatizer = WordNetLemmatizer()
     stop_words = set(
@@ -20,32 +21,40 @@ def make_training_dict(training_data):  # makes the training dictionary
         index,
         row,
     ) in training_data.iterrows():  # to iterate through all the rows in training data
-        if row["problemcode"] == "OT":  # ignore OT codes
+        if row[column_to_code] == "OT":  # ignore OT codes
             continue
         elif (
-            row["problemcode"] not in training_dict.keys()
+            row[column_to_code] not in training_dict.keys()
         ):  # if code does not have a key yet, make one
-            training_dict[row["problemcode"]] = {}
+            training_dict[row[column_to_code]] = {}
         tokens = (
-            row["longdesc"]
+            row[info_for_coding]
         ).split()  # separate the desc into individual words/tokens
         for token in tokens:
             if is_spreader(token):  # ignore spreader codes
                 continue
             lemmed = lemmatizer.lemmatize(token).lower()
             if (
-                lemmed not in training_dict[row["problemcode"]].keys()
+                lemmed not in training_dict[row[column_to_code]].keys()
                 and lemmed not in stop_words
             ):  # only look for words which have not appeared yet and are not in the stop_words file
-                training_dict[row["problemcode"]][
+                training_dict[row[column_to_code]][
                     lemmed
                 ] = None  # initialise the value as None
+
     return training_dict
 
 
 # define the model, where it will take in a dataframe and a dict of words and return a score where score is percentage of predicted codes which are the same as original codes
 def model(
-    data, training_dict, threshold=None, tester=True, iteration=0
+    data,
+    training_dict,
+    threshold=None,
+    tester=True,
+    iteration=0,
+    column_to_code="problemcode",
+    info_for_coding="longdesc",
+    output_column="predicted_code",
 ):  # takes in dataframe , dict, threshold = None by default, and tester = True by default
     def get_key_from_score(val):  # inner function to find the key from its value
         for key, value in score.items():
@@ -93,7 +102,7 @@ def model(
         ):  # for every code in the training dict pass through 1 time to give it a score
             score[code] = 1  # initialize score to 1
             for word in (
-                row["longdesc"]
+                row[info_for_coding]
             ).split():  # split all the words in the description and iterte through all the words
                 lemmed = lemmatizer.lemmatize(word).lower()  # make them all lower case
                 if (
@@ -104,12 +113,12 @@ def model(
         if (
             max_score > threshold
         ):  # if the higest score is above the threshold, make that code the new code for the event, if not use OT
-            row["new code"] = get_key_from_score(max_score)
+            row[output_column] = get_key_from_score(max_score)
         else:
-            row["new code"] = "OT"
+            row[output_column] = "OT"
 
         times += 1  # count the number of times the loop has run
-        if row["new code"] == row["problemcode"]:
+        if row[output_column] == row[column_to_code]:
             correct += 1  # count the number of times the loop is correct
         if tester == False:  # add the entire row into the output dataframe
             result = result.append(row)
@@ -134,10 +143,19 @@ def model(
 
 
 # define the trainer which will take in data, number of trials, number of iterations per trial and return a dataframe with the model and scores
-def trainer(data, num_trials, num_iterations, training_dict=None, threshold=None):
+def trainer(
+    data,
+    num_trials,
+    num_iterations,
+    training_dict=None,
+    threshold=None,
+    column_to_code="problemcode",
+    info_for_coding="longdesc",
+    output_file="model.csv",
+):
     thres = threshold
     if training_dict == None:  # if there is no dictionary, make a new one
-        training_dict = make_training_dict(data)
+        training_dict = make_training_dict(data, column_to_code, info_for_coding)
     for i in range(num_trials):  # for the number of trials to conduct
         # print number of keywords checked in the weights
         length = 0
@@ -164,7 +182,7 @@ def trainer(data, num_trials, num_iterations, training_dict=None, threshold=None
         )
         print(top_10)
         # after running every iteration, take the top 10% of the scores and average them to get the base score for the next model
-        top_10.to_csv(data_folder + f"trial_{i+1}.csv", index=False)
+        top_10.to_csv(data_folder + f"{output_file[:-4]} trial_{i+1}.csv", index=False)
 
         # make the keys of the dict inside weights the columns of a new dataframe
         code_weights = pd.DataFrame(columns=top_10.iloc[0]["weights"].keys())
@@ -208,5 +226,5 @@ def trainer(data, num_trials, num_iterations, training_dict=None, threshold=None
     # add the final results into a dataframe to be exported as csv
     result = pd.DataFrame({"weights": [training_dict], "threshold": thres})
     print(result)
-    result.to_csv(data_folder + "model.csv", index=False)
+    result.to_csv(data_folder + output_file, index=False)
     return training_dict, thres

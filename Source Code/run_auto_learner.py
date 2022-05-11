@@ -7,7 +7,7 @@ data_folder = r"Current Data\\"
 bdn_details = read_file(data_folder + "All SP BDN.csv")
 
 # split file into 2, one with problemcode and the other without
-not_coded, coded = split_csv(bdn_details)
+not_coded, coded = split_csv_with_choice(bdn_details, "problemcode")
 
 
 # clean dataframes

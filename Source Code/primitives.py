@@ -3,7 +3,7 @@ import pathlib
 
 
 def read_file(filename):  # read csv file
-    with open(filename, "r") as file:
+    with open(filename, "r", encoding="utf8") as file:
         details = csv.reader(file)
         header = []
         header = next(details)
