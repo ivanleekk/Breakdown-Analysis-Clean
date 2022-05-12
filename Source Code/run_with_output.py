@@ -13,10 +13,7 @@ pm_details = read_file(data_folder + "Spreader_PM_2019-2022.csv")
 
 # classify data
 after = model(
-    bdn,
-    test_dict,
-    model_1.iloc[0]["threshold"],
-    tester=False,
+    bdn, test_dict, model_1.iloc[0]["threshold"], tester=False, output_column="new code"
 )
 
 after.to_csv(data_folder + "save.csv", index=False)

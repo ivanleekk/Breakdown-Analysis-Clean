@@ -2,10 +2,14 @@ from read_data import *
 from random import random
 from nltk import WordNetLemmatizer
 from copy import deepcopy
+import nltk
 
 # data directory
 data_folder = r"Current Data\\"
 
+#download nltk files
+nltk.download("wordnet")
+nltk.download("omw-1.4")
 
 # from the longdesc in the training data, make a dict of all the words that will appear for each problemcode and put that in a dictionary except OT
 # import these modules

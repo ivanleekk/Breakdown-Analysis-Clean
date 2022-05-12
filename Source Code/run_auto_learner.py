@@ -30,4 +30,4 @@ test_data.to_csv(data_folder + "test_data.csv", index=False)
 
 
 # run the trainer
-trainer(training_data, num_trials=40, num_iterations=3000)
+trainer(training_data, num_trials=5, num_iterations=100)
